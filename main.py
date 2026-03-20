@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import sv_ttk
+import getHardware
 root = tk.Tk()
 root.title("WebUI Launcher")
 root.geometry("1000x600")
@@ -41,12 +42,13 @@ notebook.add(settings, text="Settings")
 
 Hardware = ttk.LabelFrame(recs, text="Hardware", padding=10)
 Hardware.pack(fill="x", pady=(0, 10))
-label = tk.Label(Hardware, text="CPU")
-label.pack(pady=20)
-label = tk.Label(Hardware, text="RAM")
-label.pack(pady=20)
-label = tk.Label(Hardware, text="GPU")
-label.pack(pady=20)
+label = tk.Label(Hardware, text="CPU: " + getHardware.getCPU())
+label.pack(pady=10, anchor="w")
+label = tk.Label(Hardware, text="GPU: " + getHardware.getGPU())
+label.pack(pady=10, anchor="w")
+label = tk.Label(Hardware, text="RAM: " + getHardware.getRAM())
+label.pack(pady=10, anchor="w")
+
 
 
 
