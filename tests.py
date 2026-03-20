@@ -13,10 +13,7 @@ main_frame.pack(fill="both", expand=True)
 left_col = ttk.Frame(main_frame)
 left_col.grid(row=0, column=0, sticky="nsew", padx=5)
 
-check_frame = ttk.LabelFrame(left_col, text="Checkbuttons", padding=10)
-check_frame.pack(fill="x", pady=(0, 10))
-ttk.Checkbutton(check_frame, text="Europe").pack(anchor="w")
-ttk.Checkbutton(check_frame, text="Germany").pack(anchor="w")
+
 
 radio_frame = ttk.LabelFrame(left_col, text="Radiobuttons", padding=10)
 radio_frame.pack(fill="x")
