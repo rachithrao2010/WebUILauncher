@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 import sv_ttk
 import getHardware
+from pathlib import Path
+
 root = tk.Tk()
 root.title("WebUI Launcher")
 root.geometry("1000x600")
@@ -48,12 +50,6 @@ label = tk.Label(Hardware, text="GPU: " + getHardware.getGPU())
 label.pack(pady=10, anchor="w")
 label = tk.Label(Hardware, text="RAM: " + getHardware.getRAM())
 label.pack(pady=10, anchor="w")
-
-
-
-
-
-
 
 notebook.pack(fill="both", expand=True)
 
