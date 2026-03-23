@@ -41,6 +41,9 @@ discover = ttk.Frame(notebook)
 settings = ttk.Frame(notebook)
 
 notebook.add(launch, text="Launch")
+
+launchbutton = ttk.Button(launch, style='Launch.TButton', text="LAUNCH")
+launchbutton.pack(pady=20, anchor="w")
 notebook.add(recs, text="Recommendations")
 notebook.add(discover, text="Discover")
 notebook.add(settings, text="Settings")

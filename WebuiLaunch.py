@@ -7,5 +7,8 @@ def install():
 def close():
     pass
 
+def check():
+    pass
+
 def decide():
     pass

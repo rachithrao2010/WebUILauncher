@@ -1,18 +1,23 @@
 import subprocess
-CPUCompany = ""
-CPUBrand = ""
-CPUTier = ""
-CPUgen = ""
+CPU_corecount = 0
+CPU_maxclockspeed = 0
+CPU_L3Cachesize = 0
+CPU_Threadcount = 0
+CPU_AVX512 = False
+CPU_AMX = False
 
-GPUCompany = ""
-GPUSeries = ""
-GPUTier = ""
+GPU_VRAMcapacity = 0
+GPU_Memspeed = 0
+GPU_Membandwidth = 0
+GPU_TFLOPcount = 0
+GPU_TensorCorecount = 0
 
-RAMcapacity = 0
-RAMspeed = 0
+RAM_capacity = 0
+RAM_speed = 0
+RAM_Type = ""
 
 def getCPU():
-    global CPUCompany, CPUBrand, CPUgen, CPUTier
+    
 
     cmd = "wmic cpu get name"
     output = subprocess.check_output(cmd, shell=True, creationflags=0x08000000).decode().strip().split()
