@@ -3,6 +3,7 @@ from tkinter import ttk
 import sv_ttk
 import getHardware
 from pathlib import Path
+import threading
 
 root = tk.Tk()
 root.title("WebUI Launcher")
@@ -43,7 +44,7 @@ settings = ttk.Frame(notebook)
 notebook.add(launch, text="Launch")
 
 launchbutton = ttk.Button(launch, style='Launch.TButton', text="LAUNCH")
-launchbutton.pack(pady=20, anchor="w")
+launchbutton.pack(pady=10, anchor="w")
 notebook.add(recs, text="Recommendations")
 notebook.add(discover, text="Discover")
 notebook.add(settings, text="Settings")
@@ -52,12 +53,17 @@ notebook.add(settings, text="Settings")
 
 Hardware = ttk.LabelFrame(recs, text="Hardware", padding=10)
 Hardware.pack(fill="x", pady=(0, 10))
-label = tk.Label(Hardware, text="CPU: " + getHardware.getCPU())
-label.pack(pady=10, anchor="w")
-label = tk.Label(Hardware, text="GPU: " + getHardware.getGPU())
-label.pack(pady=10, anchor="w")
-label = tk.Label(Hardware, text="RAM: " + getHardware.getRAM())
-label.pack(pady=10, anchor="w")
+labelCPU = ttk.Label(Hardware, text="CPU: ")
+labelCPU.pack(pady=10, anchor="w")
+labelGPU = ttk.Label(Hardware, text="GPU: ")
+labelGPU.pack(pady=10, anchor="w")
+labelRAM = ttk.Label(Hardware, text="RAM: ")
+labelRAM.pack(pady=10, anchor="w")
+
+thread = threading.Thread(target=getHardware.updateHardware, args=(labelCPU, labelGPU, labelRAM))
+thread.daemon = True
+thread.start()
+
 
 notebook.pack(fill="both", expand=True)
 

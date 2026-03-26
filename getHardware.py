@@ -19,31 +19,40 @@ RAM_Type = ""
 def getCPU():
     
 
-    cmd = "wmic cpu get name"
-    output = subprocess.check_output(cmd, shell=True, creationflags=0x08000000).decode().strip().split()
-    output = " ".join(output[1:])
+    cmd = "Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Name"
+    output = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.strip()
     return output
 
 def getGPU():
-    cmd = "wmic path win32_VideoController get name"
-    output = subprocess.check_output(cmd, shell=True, creationflags=0x08000000).decode().strip().split()
-    output = " ".join(output[1:])
+    cmd = "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name"
+    output = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.strip()
     return output
 
 def getRAM():
-    cmd = "wmic ComputerSystem get TotalPhysicalMemory"
-    output = subprocess.check_output(cmd, shell=True, creationflags=0x08000000).decode().strip().split()
-    output = int(output[1]) / 1073741824
-    output = int(output + 0.5) if output >= 0 else int(output - 0.5)
-    cmd = "wmic memorychip get speed"
-    speed = subprocess.check_output(cmd, shell=True, creationflags=0x08000000).decode().strip().split()
-    return str(output) + " GB @ " + str(speed[2]) + " MT/s"
+    cmd = "[Math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)"
+    output = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.strip()
+    cmd = "Get-CimInstance Win32_PhysicalMemory | Select-Object -ExpandProperty ConfiguredClockSpeed"
+    speed = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.split()
+    return str(output) + " GB @ " + str(speed[0]) + " MT/s"
 
 def getOverallScore():
     pass
 
 def getCPUScore():
-    pass
+    global CPU_corecount, CPU_L3Cachesize, CPU_Threadcount, CPU_AVX512, CPU_AMX
+    cmd = "wmic cpu get NumberOfCores"
+    output = subprocess.check_output(cmd, shell=True, creationflags=0x08000000).decode().strip().split()
+    CPU_corecount = int(output[1])
+
+    cmd = "wmic cpu get NumberOfLogicalProcessors"
+    output = subprocess.check_output(cmd, shell=True, creationflags=0x08000000).decode().strip().split()
+    CPU_Threadcount = int(output[1])
+
+    
+def updateHardware(cpu, gpu, ram):
+    cpu.config(text="CPU: " + getCPU())
+    gpu.config(text="GPU: " + getGPU())
+    ram.config(text="RAM: " + getRAM())
 
 def getGPUScore():
     pass
@@ -53,5 +62,7 @@ def getRAMScore():
 
 def writeScores():
     pass
+
+getCPUScore()
 
 
