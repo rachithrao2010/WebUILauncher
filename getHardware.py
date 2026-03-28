@@ -31,10 +31,16 @@ def getGPU():
     return output
 
 def getRAM():
+    global RAM_speed, RAM_capacity
+
     cmd = "[Math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)"
     output = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.strip()
     cmd = "Get-CimInstance Win32_PhysicalMemory | Select-Object -ExpandProperty ConfiguredClockSpeed"
     speed = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.split()
+
+    RAM_capacity = int(output)
+    RAM_speed = int(speed[0])
+
     return str(output) + " GB @ " + str(speed[0]) + " MT/s"
 
 def getOverallScore():
@@ -77,22 +83,25 @@ def getCPUScore():
         score += 25
     
     return score
-    
-    
-def updateHardware(cpu, gpu, ram):
-    cpu.config(text="CPU: " + getCPU())
-    gpu.config(text="GPU: " + getGPU())
-    ram.config(text="RAM: " + getRAM())
 
 def getGPUScore():
     pass
 
 def getRAMScore():
-    pass
+    global RAM_capacity, RAM_speed
+    cmd = "(Get-CimInstance Win32_PhysicalMemory).SMBIOSMemoryType"
+    type = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.split()
+    RAM_Type = int(type[0])
+    score = 0
+    score += min(100, max(0, ((RAM_capacity / 64) * 100))) * 0.5
+    score += min(100, max(0, ((RAM_speed / 6400) * 100))) * 0.4
+    score += min(100, max(0, ((RAM_Type / 34) * 100))) * 0.1
+    return score
 
 def writeScores():
     pass
 
-print(getCPUScore())
-
-
+def updateHardware(cpu, gpu, ram):
+    cpu.config(text="CPU: " + getCPU())
+    gpu.config(text="GPU: " + getGPU())
+    ram.config(text="RAM: " + getRAM())
