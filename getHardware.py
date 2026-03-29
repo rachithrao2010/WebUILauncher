@@ -1,6 +1,7 @@
 import subprocess
 import multiprocessing
 from cpuinfo import get_cpu_info
+from pynvml import *
 CPU_corecount = 0
 CPU_maxclockspeed = 0
 CPU_L3Cachesize = 0
@@ -11,8 +12,7 @@ CPU_AMX = False
 GPU_VRAMcapacity = 0
 GPU_Memspeed = 0
 GPU_Membandwidth = 0
-GPU_TFLOPcount = 0
-GPU_TensorCorecount = 0
+GPU_TensorCore = False
 
 RAM_capacity = 0
 RAM_speed = 0
@@ -85,7 +85,33 @@ def getCPUScore():
     return score
 
 def getGPUScore():
-    pass
+    global GPU_VRAMcapacity, GPU_Membandwidth, GPU_Memspeed, GPU_TensorCore
+    nvmlInit()
+    handle = nvmlDeviceGetHandleByIndex(0)
+    mx, mn = nvmlDeviceGetCudaComputeCapability(handle)
+    GPU_TensorCore = mx >= 7
+
+    mem_info = nvmlDeviceGetMemoryInfo(handle)
+    GPU_VRAMcapacity = mem_info.total / 1024**3
+
+    GPU_Memspeed = nvmlDeviceGetMaxClockInfo(handle, NVML_CLOCK_MEM)
+    mult = 4
+    if mx >= 9:
+        mult = 2
+    elif mx == 8:
+        mult = 16 if mn >= 6 else 8
+    elif mx == 7:
+        mult = 8
+    
+    GPU_Membandwidth = (nvmlDeviceGetMemoryBusWidth(handle) * mult * GPU_Memspeed) / (8 * 1000)
+
+    score = 0
+    score += min(100, max(0, ((GPU_VRAMcapacity / 24) * 100))) * 0.5
+    score += min(100, max(0, ((GPU_Membandwidth / 1000) * 100))) * 0.35
+    score += min(100, max(0, ((GPU_Memspeed / 10501) * 100))) * 0.05
+    if GPU_TensorCore:
+        score += 10
+    return score
 
 def getRAMScore():
     global RAM_capacity, RAM_speed
