@@ -65,7 +65,14 @@ if __name__ == '__main__':
     labelRAM = ttk.Label(Hardware, text="RAM: ")
     labelRAM.pack(pady=10, anchor="w")
 
-    thread = threading.Thread(target=getHardware.updateHardware, args=(labelCPU, labelGPU, labelRAM))
+    loading = ttk.Progressbar(Hardware, orient="horizontal", mode="indeterminate")
+    loading.pack(fill="x")
+    loading.start(50)
+
+    labelscore = ttk.Label(Hardware, text="Score: ")
+    labelscore.pack(pady=10, anchor="w")
+
+    thread = threading.Thread(target=getHardware.updateHardware, args=(labelCPU, labelGPU, labelRAM, labelscore, root, loading))
     thread.daemon = True
     thread.start()
 

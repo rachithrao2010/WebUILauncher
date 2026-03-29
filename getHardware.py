@@ -2,25 +2,21 @@ import subprocess
 import multiprocessing
 from cpuinfo import get_cpu_info
 from pynvml import *
-CPU_corecount = 0
-CPU_maxclockspeed = 0
-CPU_L3Cachesize = 0
-CPU_Threadcount = 0
-CPU_AVX512 = False
-CPU_AMX = False
+import json
+data = {
+    "CPU_corecount": 0, "CPU_maxclockspeed": 0, "CPU_L3Cachesize": 0,
+    "CPU_Threadcount": 0, "CPU_AVX512": False, "CPU_AMX": False,
+    "GPU_VRAMcapacity": 0, "GPU_Memspeed": 0, "GPU_Membandwidth": 0,
+    "GPU_TensorCore": False, "RAM_capacity": 0, "RAM_speed": 0,
+    "RAM_Type": 0, "TotalScore": 0
+}
+isScoreReady = False
 
-GPU_VRAMcapacity = 0
-GPU_Memspeed = 0
-GPU_Membandwidth = 0
-GPU_TensorCore = False
+with open('hardware.json', 'r') as f:
+    data = json.load(f)
 
-RAM_capacity = 0
-RAM_speed = 0
-RAM_Type = ""
 
 def getCPU():
-    
-
     cmd = "Get-CimInstance Win32_Processor | Select-Object -ExpandProperty Name"
     output = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.strip()
     return output
@@ -31,70 +27,79 @@ def getGPU():
     return output
 
 def getRAM():
-    global RAM_speed, RAM_capacity
+    global data
 
     cmd = "[Math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)"
     output = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.strip()
     cmd = "Get-CimInstance Win32_PhysicalMemory | Select-Object -ExpandProperty ConfiguredClockSpeed"
     speed = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.split()
 
-    RAM_capacity = int(output)
-    RAM_speed = int(speed[0])
+    data["RAM_capacity"] = int(output)
+    data["RAM_speed"] = int(speed[0])
 
     return str(output) + " GB @ " + str(speed[0]) + " MT/s"
 
 def getOverallScore():
-    pass
+    score = 0
+    score += getCPUScore() * 0.1
+    score += getGPUScore() * 0.65
+    score += getRAMScore() * 0.25
+
+    return round(score)
 
 def getCPUScore():
-    global CPU_corecount, CPU_L3Cachesize, CPU_Threadcount, CPU_maxclockspeed, CPU_AVX512, CPU_AMX
+    global data
 
     cmd = "(Get-CimInstance -ClassName Win32_Processor | Measure-Object -Property NumberOfCores -Sum).Sum"
     corecount = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.split()
-    CPU_corecount = int(corecount[0])
+    data["CPU_corecount"] = int(corecount[0])
 
     cmd = "(Get-CimInstance -ClassName Win32_Processor | Measure-Object -Property NumberOfLogicalProcessors -Sum).Sum"
     threadcount = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.split()
-    CPU_Threadcount = int(threadcount[0])
+    data["CPU_Threadcount"] = int(threadcount[0])
 
     cmd = "(Get-CimInstance Win32_Processor | Select-Object Name, L3CacheSize)"
     cachesize = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.split()
-    CPU_L3Cachesize = int(cachesize[-1])/1000
+    data["CPU_L3Cachesize"] = int(cachesize[-1])/1000
 
     cmd = "(Get-CimInstance Win32_Processor).MaxClockSpeed"
     clkspd = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.split()
-    CPU_maxclockspeed = int(clkspd[0]) / 1000
+    data["CPU_maxclockspeed"] = int(clkspd[0]) / 1000
 
     flags = get_cpu_info().get('flags', [])
     
 
-    CPU_AVX512 = any('avx512' in flag for flag in flags)
+    data["CPU_AVX512"] = any('avx512' in flag for flag in flags)
+    if not data["CPU_AVX512"]:
+        data["CPU_AVX512"] = False
 
-    CPU_AMX = any('amx' in flag for flag in flags)
+    data["CPU_AMX"] = any('amx' in flag for flag in flags)
+    if not data["CPU_AMX"]:
+        data["CPU_AMX"] = False
 
     score = 0
-    score += min(100, max(0, ((CPU_corecount / 15) * 100))) * 0.2
-    score += min(100, max(0, ((CPU_Threadcount / CPU_corecount) * 100))) * 0.03
-    score += min(100, max(0, ((CPU_L3Cachesize / 64) * 100))) * 0.1
-    score += min(100, max(0, ((CPU_maxclockspeed / 3.5) * 100))) * 0.07
-    if CPU_AMX:
+    score += min(100, max(0, ((data["CPU_corecount"] / 15) * 100))) * 0.2
+    score += min(100, max(0, ((data["CPU_Threadcount"] / data["CPU_corecount"]) * 100))) * 0.03
+    score += min(100, max(0, ((data["CPU_L3Cachesize"] / 64) * 100))) * 0.1
+    score += min(100, max(0, ((data["CPU_maxclockspeed"] / 3.5) * 100))) * 0.07
+    if data["CPU_AMX"]:
         score += 35
-    if CPU_AVX512:
+    if data["CPU_AVX512"]:
         score += 25
     
     return score
 
 def getGPUScore():
-    global GPU_VRAMcapacity, GPU_Membandwidth, GPU_Memspeed, GPU_TensorCore
+    global data
     nvmlInit()
     handle = nvmlDeviceGetHandleByIndex(0)
     mx, mn = nvmlDeviceGetCudaComputeCapability(handle)
-    GPU_TensorCore = mx >= 7
+    data["GPU_TensorCore"] = mx >= 7
 
     mem_info = nvmlDeviceGetMemoryInfo(handle)
-    GPU_VRAMcapacity = mem_info.total / 1024**3
+    data["GPU_VRAMcapacity"] = mem_info.total / 1024**3
 
-    GPU_Memspeed = nvmlDeviceGetMaxClockInfo(handle, NVML_CLOCK_MEM)
+    data["GPU_Memspeed"] = nvmlDeviceGetMaxClockInfo(handle, NVML_CLOCK_MEM)
     mult = 4
     if mx >= 9:
         mult = 2
@@ -103,31 +108,40 @@ def getGPUScore():
     elif mx == 7:
         mult = 8
     
-    GPU_Membandwidth = (nvmlDeviceGetMemoryBusWidth(handle) * mult * GPU_Memspeed) / (8 * 1000)
+    data["GPU_Membandwidth"] = (nvmlDeviceGetMemoryBusWidth(handle) * mult * data["GPU_Memspeed"]) / (8 * 1000)
 
     score = 0
-    score += min(100, max(0, ((GPU_VRAMcapacity / 24) * 100))) * 0.5
-    score += min(100, max(0, ((GPU_Membandwidth / 1000) * 100))) * 0.35
-    score += min(100, max(0, ((GPU_Memspeed / 10501) * 100))) * 0.05
-    if GPU_TensorCore:
+    score += min(100, max(0, ((data["GPU_VRAMcapacity"] / 24) * 100))) * 0.5
+    score += min(100, max(0, ((data["GPU_Membandwidth"] / 1000) * 100))) * 0.35
+    score += min(100, max(0, ((data["GPU_Memspeed"] / 10501) * 100))) * 0.05
+    if data["GPU_TensorCore"]:
         score += 10
     return score
 
 def getRAMScore():
-    global RAM_capacity, RAM_speed
+    global data
     cmd = "(Get-CimInstance Win32_PhysicalMemory).SMBIOSMemoryType"
     type = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True, check=True).stdout.split()
-    RAM_Type = int(type[0])
+    data["RAM_Type"] = int(type[0])
     score = 0
-    score += min(100, max(0, ((RAM_capacity / 64) * 100))) * 0.5
-    score += min(100, max(0, ((RAM_speed / 6400) * 100))) * 0.4
-    score += min(100, max(0, ((RAM_Type / 34) * 100))) * 0.1
+    score += min(100, max(0, ((data["RAM_capacity"] / 64) * 100))) * 0.5
+    score += min(100, max(0, ((data["RAM_speed"] / 6400) * 100))) * 0.4
+    score += min(100, max(0, ((data["RAM_Type"]/ 34) * 100))) * 0.1
     return score
 
-def writeScores():
-    pass
+def writeScores(root, progressbar, score):
+    if not data["TotalScore"]:
+        data["TotalScore"] = getOverallScore()
+        with open("hardware.json", "w") as file:
+            json.dump(data, file, indent=4)
+    score.config(text="Score: " + str(data["TotalScore"]))
+    root.after(0, progressbar.destroy())
 
-def updateHardware(cpu, gpu, ram):
+def updateHardware(cpu, gpu, ram, score, root, progress):
     cpu.config(text="CPU: " + getCPU())
     gpu.config(text="GPU: " + getGPU())
     ram.config(text="RAM: " + getRAM())
+    writeScores(root, progress, score)
+
+getRAM()
+print(getOverallScore())
