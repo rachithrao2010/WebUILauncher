@@ -3,6 +3,7 @@ import multiprocessing
 from cpuinfo import get_cpu_info
 from pynvml import *
 import json
+import math
 data = {
     "CPU_corecount": 0, "CPU_maxclockspeed": 0, "CPU_L3Cachesize": 0,
     "CPU_Threadcount": 0, "CPU_AVX512": False, "CPU_AMX": False,
@@ -143,5 +144,28 @@ def updateHardware(cpu, gpu, ram, score, root, progress):
     ram.config(text="RAM: " + getRAM())
     writeScores(root, progress, score)
 
-getRAM()
-print(getOverallScore())
+def hexCode(start_rgb, end_rgb, factor):
+    smooth_factor = (1 - math.cos(factor * math.pi)) / 2
+    r = int(start_rgb[0] + (end_rgb[0] - start_rgb[0]) * smooth_factor)
+    g = int(start_rgb[1] + (end_rgb[1] - start_rgb[1]) * smooth_factor)
+    b = int(start_rgb[2] + (end_rgb[2] - start_rgb[2]) * smooth_factor)
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+def CreateScorebar(canvas, width, height, score):
+    RED = (255, 0, 0)
+    YELLOW = (255, 255, 0)
+    GREEN = (0, 255, 0)
+    
+    half_width = width / 2
+
+    for x in range(width):
+        if x < half_width:
+            color = hexCode(RED, YELLOW, x / half_width)
+        else:
+            color = hexCode(YELLOW, GREEN, (x - half_width) / half_width)
+        
+        canvas.create_line(x, 0, x, height, fill=color)
+    offset = -2
+    for i in range(4):
+        canvas.create_line(score + offset, 0, score + offset, height, fill="black")
+        offset += 1

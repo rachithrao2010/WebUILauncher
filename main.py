@@ -5,7 +5,7 @@ import getHardware
 from pathlib import Path
 import threading
 import multiprocessing
-
+from getHardware import data
 if __name__ == '__main__':
 
     multiprocessing.freeze_support()
@@ -76,8 +76,10 @@ if __name__ == '__main__':
     thread.daemon = True
     thread.start()
 
-
-    notebook.pack(fill="both", expand=True)
+    canvas = tk.Canvas(Hardware, width=1020, height=40)
+    canvas.pack(pady=20, anchor="center")
+    getHardware.CreateScorebar(canvas, 1000, 30, data["TotalScore"] * 10)
+    notebook.pack(fill="both", expand=True, )
 
 
     root.mainloop()
