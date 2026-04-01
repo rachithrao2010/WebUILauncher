@@ -165,7 +165,8 @@ def CreateScorebar(canvas, width, height, score):
             color = hexCode(YELLOW, GREEN, (x - half_width) / half_width)
         
         canvas.create_line(x, 0, x, height, fill=color)
-    offset = -2
-    for i in range(4):
-        canvas.create_line(score + offset, 0, score + offset, height, fill="black")
+
+    offset = -1
+    for i in range(3):
+        canvas.create_line(score + offset, 0, score + offset, height, fill="black" if score < 900 else "white")
         offset += 1

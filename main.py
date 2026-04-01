@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     root = tk.Tk()
     root.title("WebUI Launcher")
-    root.geometry("1000x600")
+    root.geometry("1050x600")
     icon = tk.PhotoImage(file="WindowIcon.png")
     root.iconphoto(False, icon)
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     thread.daemon = True
     thread.start()
 
-    canvas = tk.Canvas(Hardware, width=1020, height=40)
+    canvas = tk.Canvas(Hardware, width=1000, height=30)
     canvas.pack(pady=20, anchor="center")
     getHardware.CreateScorebar(canvas, 1000, 30, data["TotalScore"] * 10)
     notebook.pack(fill="both", expand=True, )
